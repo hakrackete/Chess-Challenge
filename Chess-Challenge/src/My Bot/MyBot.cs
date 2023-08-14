@@ -16,20 +16,15 @@ public class MyBot : IChessBot
 
         Random rng = new();
         Move moveToReturn = moves[rng.Next(moves.Length)];
-        Console.WriteLine(evalBoard(board));
-
-        foreach (Move move in moves)
-        {
-            if(MoveIsCheckmate(board,move)){
-                return move;
-            }
-            double bestMoveScore = 0;
-            double score = evaluateMove(board,move);
-            // do something with entry.Value or entry.Key
-            if(score > bestMoveScore){
-                bestMoveScore = score;
+        int currentscore  = evalBoard(board);
+        foreach(Move move in moves){
+            int newScore = negamin(board,move,3);
+            if(newScore < currentscore){
+                currentscore = newScore;
                 moveToReturn = move;
             }
+
+
         }
 
 
@@ -141,4 +136,24 @@ public class MyBot : IChessBot
         return score;
 
     } 
+    public int negamin(Board board,Move move, int Depth){
+        int returnValue = 0;
+        if(Depth == 0){
+            board.MakeMove(move);
+            returnValue = evalBoard(board);
+            board.UndoMove(move);
+        }
+        else{
+            board.MakeMove(move);
+            Move[] allMoves = board.GetLegalMoves();
+            foreach (Move newMove in allMoves){
+                int newValue = negamin(board, newMove, Depth - 1);
+                if(newValue > returnValue){
+                    returnValue = newValue; 
+                }
+            }
+            board.UndoMove(move);
+        }
+        return returnValue;
+    }
 }
