@@ -16,6 +16,7 @@ public class MyBot : IChessBot
 
         Random rng = new();
         Move moveToReturn = moves[rng.Next(moves.Length)];
+        Console.WriteLine(evalBoard(board));
 
         foreach (Move move in moves)
         {
@@ -121,4 +122,23 @@ public class MyBot : IChessBot
         }
         return score;
     }
+    public int evalBoard(Board board){
+        // Piece values: null, pawn, knight, bishop, rook, queen, king
+        int[] pieceValues = { 0, 100, 300, 300, 500, 900, 10000 };
+        
+        int score = 0;
+        foreach (PieceList pieceList in board.GetAllPieceLists()){
+            int count = pieceList.Count;
+            int value = pieceValues[(int)pieceList.TypeOfPieceInList];
+            if(!pieceList.IsWhitePieceList){
+                value *= -1;
+            }
+            score += count * value;
+        }
+        if(!board.IsWhiteToMove){
+            score *= -1;
+        }
+        return score;
+
+    } 
 }
