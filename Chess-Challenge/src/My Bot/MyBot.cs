@@ -12,20 +12,31 @@ public class MyBot : IChessBot
 
         // Piece values: null, pawn, knight, bishop, rook, queen, king
         int[] pieceValues = { 0, 100, 300, 300, 500, 900, 10000 };
-        int searchdepth = 3;
-        Console.WriteLine(timer);
+        int searchdepth = 4;
+        if (timer.MillisecondsRemaining < 20000){
+            searchdepth -=1;
+        }
+        if(timer.MillisecondsRemaining < 3){
+            searchdepth -=1; 
+        }
+        
 
         Move[] moves = board.GetLegalMoves();
 
         Random rng = new();
         Move moveToReturn = moves[rng.Next(moves.Length)];
+        foreach (Move newMove in board.GetLegalMoves()){
+            if(MoveIsCheckmate(board,newMove)){
+                return newMove;
+            }
+        }
         int currentscore  = board.IsWhiteToMove ? Int32.MinValue : Int32.MaxValue;
 
             if(board.IsWhiteToMove){
                 currentscore = Int32.MinValue;
                 foreach (Move newMove in board.GetLegalMoves()){
                     board.MakeMove(newMove);
-                    int newValue = minmax(board,false,searchdepth);
+                    int newValue = minmax(board,false,searchdepth,Int32.MinValue,Int32.MaxValue);
                     if(newValue > currentscore){
                         currentscore = newValue; 
                         moveToReturn = newMove;
@@ -37,7 +48,7 @@ public class MyBot : IChessBot
                 currentscore = Int32.MaxValue;
                 foreach (Move newMove in board.GetLegalMoves()){
                     board.MakeMove(newMove);
-                    int newValue = minmax(board,true,searchdepth);
+                    int newValue = minmax(board,true,searchdepth,Int32.MinValue,Int32.MaxValue);
                     if(newValue < currentscore){
                         currentscore = newValue; 
                         moveToReturn = newMove;
@@ -121,7 +132,7 @@ public class MyBot : IChessBot
         return score;
 
     } 
-    public int minmax(Board board, bool PlayertoMaximize, int Depth){
+    public int minmax(Board board, bool PlayertoMaximize, int Depth, int alpha, int beta){
         int returnValue = 0;
         if(Depth == 0){
             returnValue = evalBoard(board);
@@ -131,11 +142,13 @@ public class MyBot : IChessBot
                 returnValue = Int32.MinValue;
                 foreach (Move newMove in board.GetLegalMoves()){
                     board.MakeMove(newMove);
-                    int newValue = minmax(board,false,Depth-1);
-                    if(newValue > returnValue){
-                        returnValue = newValue; 
-                    }
+                    int newValue = minmax(board,false,Depth-1,alpha,beta);                       
+                    returnValue = Math.Max(newValue,returnValue); 
+                    alpha = Math.Max(alpha,newValue);
                     board.UndoMove(newMove);
+                    if(beta <= alpha){
+                        break;
+                    }
                 }
                 
             }
@@ -143,11 +156,13 @@ public class MyBot : IChessBot
                 returnValue = Int32.MaxValue;
                 foreach (Move newMove in board.GetLegalMoves()){
                     board.MakeMove(newMove);
-                    int newValue = minmax(board,true,Depth-1);
-                    if(newValue < returnValue){
-                        returnValue = newValue; 
-                    }
+                    int newValue = minmax(board,true,Depth-1,alpha,beta);
+                    returnValue = Math.Min(newValue,returnValue); 
+                    beta = Math.Min(beta,newValue);
                     board.UndoMove(newMove);
+                    if(beta <= alpha){
+                        break;
+                    }
                 }
             }
         }
