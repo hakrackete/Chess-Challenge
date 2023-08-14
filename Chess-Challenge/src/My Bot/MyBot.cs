@@ -87,6 +87,14 @@ public class MyBot : IChessBot
     }
     public double evaluateMove(Board board, Move move){
         double score = 0;
+        double MoveIsGuardedval = 0;
+        if(MoveIsGuarded(board,move)){
+            MoveIsGuardedval = 1;
+        }
+        double MoveIsAttacked = 0;
+        if(board.SquareIsAttackedByOpponent(move.TargetSquare)){
+            MoveIsAttacked = 1;
+        }
         // plus für captures
         score += (int)move.CapturePieceType;
 
@@ -99,11 +107,17 @@ public class MyBot : IChessBot
                 score -= (int)move.MovePieceType;
             }
         }
-        if(MoveIsCheck(board,move) && MoveIsGuarded(board,move)){
-            score += 500;
+        if(MoveIsCheck(board,move)){
+            score += 0 + (500 * MoveIsGuardedval);
         }
         if(move.IsPromotion){
-            score += (int)move.PromotionPieceType;
+            score += (int)move.PromotionPieceType - 100;
+            if (board.SquareIsAttackedByOpponent(move.TargetSquare) && !MoveIsGuarded(board,move)){
+                score -= (int)move.PromotionPieceType - 100;
+            }
+            if (board.SquareIsAttackedByOpponent(move.TargetSquare) && MoveIsGuarded(board,move)){
+                score -= ((int)move.PromotionPieceType - 100)/2;
+            }
         }
         return score;
     }
