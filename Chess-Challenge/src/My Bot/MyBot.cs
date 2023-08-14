@@ -12,8 +12,8 @@ public class MyBot : IChessBot
 
         // Piece values: null, pawn, knight, bishop, rook, queen, king
         int[] pieceValues = { 0, 100, 300, 300, 500, 900, 10000 };
-        int searchdepth = 4;
-        if (timer.MillisecondsRemaining < 20000){
+        int searchdepth = 6;
+        if (timer.MillisecondsRemaining < 30000){
             searchdepth -=1;
         }
         if(timer.MillisecondsRemaining < 3){
@@ -31,29 +31,38 @@ public class MyBot : IChessBot
             }
         }
         int currentscore  = board.IsWhiteToMove ? Int32.MinValue : Int32.MaxValue;
-
+        int ALPHA = Int32.MinValue;
+        int BETA = Int32.MaxValue;
             if(board.IsWhiteToMove){
                 currentscore = Int32.MinValue;
                 foreach (Move newMove in board.GetLegalMoves()){
                     board.MakeMove(newMove);
-                    int newValue = minmax(board,false,searchdepth,Int32.MinValue,Int32.MaxValue);
+                    int newValue = minmax(board,false,searchdepth,ALPHA,BETA);
                     if(newValue > currentscore){
                         currentscore = newValue; 
                         moveToReturn = newMove;
                     }
                     board.UndoMove(newMove);
+                    ALPHA = Math.Max(ALPHA,newValue);
+                    if(BETA <= ALPHA){
+                        break;
+                    }
                 }
             }
             else{
                 currentscore = Int32.MaxValue;
                 foreach (Move newMove in board.GetLegalMoves()){
                     board.MakeMove(newMove);
-                    int newValue = minmax(board,true,searchdepth,Int32.MinValue,Int32.MaxValue);
+                    int newValue = minmax(board,true,searchdepth,ALPHA,BETA);
                     if(newValue < currentscore){
                         currentscore = newValue; 
                         moveToReturn = newMove;
                     }
                     board.UndoMove(newMove);
+                    BETA = Math.Min(BETA,newValue);
+                    if(BETA <= ALPHA){
+                        break;
+                    }
                 }
             }
         Console.WriteLine($"expected score{currentscore}");
@@ -138,9 +147,10 @@ public class MyBot : IChessBot
             returnValue = evalBoard(board);
         }
         else{
+            Move[] moveSet = sortMovesByCaptures(board.GetLegalMoves());
             if(PlayertoMaximize){
                 returnValue = Int32.MinValue;
-                foreach (Move newMove in board.GetLegalMoves()){
+                foreach (Move newMove in moveSet){
                     board.MakeMove(newMove);
                     int newValue = minmax(board,false,Depth-1,alpha,beta);                       
                     returnValue = Math.Max(newValue,returnValue); 
@@ -154,7 +164,7 @@ public class MyBot : IChessBot
             }
             else{
                 returnValue = Int32.MaxValue;
-                foreach (Move newMove in board.GetLegalMoves()){
+                foreach (Move newMove in moveSet){
                     board.MakeMove(newMove);
                     int newValue = minmax(board,true,Depth-1,alpha,beta);
                     returnValue = Math.Min(newValue,returnValue); 
@@ -167,6 +177,20 @@ public class MyBot : IChessBot
             }
         }
     return returnValue;
+    }
+    public Move[] sortMovesByCaptures(Move[] moves){
+        List<Move> linkeTeilliste = new List<Move>();
+        List<Move> rechteTeilliste = new List<Move>();
+        foreach (Move move in moves){
+            if(move.IsCapture || move.IsPromotion){
+                linkeTeilliste.Add(move);
+            }
+            else{
+                rechteTeilliste.Add(move);
+            }
+        }
+        linkeTeilliste.AddRange(rechteTeilliste);
+        return linkeTeilliste.ToArray();
     }
 
 }
