@@ -16,7 +16,7 @@ public class MyBot : IChessBot
         if (timer.MillisecondsRemaining < 30000){
             searchdepth -=1;
         }
-        if(timer.MillisecondsRemaining < 3){
+        if(timer.MillisecondsRemaining < 10000){
             searchdepth -=1; 
         }
         
@@ -33,10 +33,15 @@ public class MyBot : IChessBot
         int currentscore  = board.IsWhiteToMove ? Int32.MinValue : Int32.MaxValue;
         int ALPHA = Int32.MinValue;
         int BETA = Int32.MaxValue;
+        Move[] moveSet = sortMovesByCaptures(board.GetLegalMoves());
             if(board.IsWhiteToMove){
                 currentscore = Int32.MinValue;
-                foreach (Move newMove in board.GetLegalMoves()){
+                foreach (Move newMove in moveSet){
                     board.MakeMove(newMove);
+                    if(board.IsRepeatedPosition()){
+                        board.UndoMove(newMove);
+                        continue;
+                    }
                     int newValue = minmax(board,false,searchdepth,ALPHA,BETA);
                     if(newValue > currentscore){
                         currentscore = newValue; 
@@ -51,8 +56,12 @@ public class MyBot : IChessBot
             }
             else{
                 currentscore = Int32.MaxValue;
-                foreach (Move newMove in board.GetLegalMoves()){
+                foreach (Move newMove in moveSet){
                     board.MakeMove(newMove);
+                    if(board.IsRepeatedPosition()){
+                        board.UndoMove(newMove);
+                        continue;
+                    }
                     int newValue = minmax(board,true,searchdepth,ALPHA,BETA);
                     if(newValue < currentscore){
                         currentscore = newValue; 
@@ -152,6 +161,10 @@ public class MyBot : IChessBot
                 returnValue = Int32.MinValue;
                 foreach (Move newMove in moveSet){
                     board.MakeMove(newMove);
+                    if(board.IsRepeatedPosition()){
+                        board.UndoMove(newMove);
+                        continue;
+                    }
                     int newValue = minmax(board,false,Depth-1,alpha,beta);                       
                     returnValue = Math.Max(newValue,returnValue); 
                     alpha = Math.Max(alpha,newValue);
@@ -166,6 +179,10 @@ public class MyBot : IChessBot
                 returnValue = Int32.MaxValue;
                 foreach (Move newMove in moveSet){
                     board.MakeMove(newMove);
+                    if(board.IsRepeatedPosition()){
+                        board.UndoMove(newMove);
+                        continue;
+                    }
                     int newValue = minmax(board,true,Depth-1,alpha,beta);
                     returnValue = Math.Min(newValue,returnValue); 
                     beta = Math.Min(beta,newValue);
@@ -179,6 +196,7 @@ public class MyBot : IChessBot
     return returnValue;
     }
     public Move[] sortMovesByCaptures(Move[] moves){
+        Array.Sort(moves,new MoveComparer());
         List<Move> linkeTeilliste = new List<Move>();
         List<Move> rechteTeilliste = new List<Move>();
         foreach (Move move in moves){
@@ -192,5 +210,13 @@ public class MyBot : IChessBot
         linkeTeilliste.AddRange(rechteTeilliste);
         return linkeTeilliste.ToArray();
     }
+    public class MoveComparer : IComparer<Move>
 
+{
+    public int Compare(Move x, Move y)
+    {
+        return (int)x.MovePieceType - (int)y.MovePieceType;
+          
+    }
+}
 }
