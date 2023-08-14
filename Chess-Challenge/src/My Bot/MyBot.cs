@@ -1,6 +1,8 @@
-﻿using ChessChallenge.API;
+﻿
+using ChessChallenge.API;
 using System;
 using System.Collections.Generic;
+
 
 public class MyBot : IChessBot
 {
@@ -10,55 +12,41 @@ public class MyBot : IChessBot
 
         // Piece values: null, pawn, knight, bishop, rook, queen, king
         int[] pieceValues = { 0, 100, 300, 300, 500, 900, 10000 };
+        int searchdepth = 3;
+        Console.WriteLine(timer);
 
         Move[] moves = board.GetLegalMoves();
-        Dictionary<Move,double> moveEval = new Dictionary<Move, double>();
 
         Random rng = new();
         Move moveToReturn = moves[rng.Next(moves.Length)];
-        int currentscore  = evalBoard(board);
-        foreach(Move move in moves){
-            int newScore = negamin(board,move,3);
-            if(newScore < currentscore){
-                currentscore = newScore;
-                moveToReturn = move;
+        int currentscore  = board.IsWhiteToMove ? Int32.MinValue : Int32.MaxValue;
+
+            if(board.IsWhiteToMove){
+                currentscore = Int32.MinValue;
+                foreach (Move newMove in board.GetLegalMoves()){
+                    board.MakeMove(newMove);
+                    int newValue = minmax(board,false,searchdepth);
+                    if(newValue > currentscore){
+                        currentscore = newValue; 
+                        moveToReturn = newMove;
+                    }
+                    board.UndoMove(newMove);
+                }
             }
-
-
-        }
-
-
-        // wenn keine captures, dann versuchen bauern zu advancen?
-        int lowestDistance = 7;
-        // if(highestCapture == 0){
-        //     foreach(Move pawnmove in moves){
-        //         Piece myPiece = board.GetPiece(pawnmove.StartSquare);
-        //         if(myPiece.IsPawn == false){
-        //             continue;
-        //         }
-        //         if (board.SquareIsAttackedByOpponent(pawnmove.TargetSquare)){
-        //             if(MoveIsGuarded(board,pawnmove) == false){
-        //                 continue;
-        //             }
-
-        //         }
-        //         if(pawnmove.IsPromotion){
-        //             moveToReturn = pawnmove;
-        //             break;
-        //         }
-        //         Square start = pawnmove.StartSquare;
-        //         Square target = pawnmove.TargetSquare;
-        //         int distance = 7 - target.Rank;
-        //         if(target.Rank - start.Rank < 0){
-        //             distance = target.Rank;
-        //         }
-        //         if(distance < lowestDistance){
-        //             lowestDistance = distance;
-        //             moveToReturn = pawnmove;
-        //         }
-        //     }
-        // }
-        Console.WriteLine(MoveIsGuarded(board,moveToReturn));
+            else{
+                currentscore = Int32.MaxValue;
+                foreach (Move newMove in board.GetLegalMoves()){
+                    board.MakeMove(newMove);
+                    int newValue = minmax(board,true,searchdepth);
+                    if(newValue < currentscore){
+                        currentscore = newValue; 
+                        moveToReturn = newMove;
+                    }
+                    board.UndoMove(newMove);
+                }
+            }
+        Console.WriteLine($"expected score{currentscore}");
+        Console.WriteLine(evalBoard(board));
         return moveToReturn;
     }
     public bool MoveIsCheckmate(Board board, Move move){
@@ -130,30 +118,40 @@ public class MyBot : IChessBot
             }
             score += count * value;
         }
-        if(!board.IsWhiteToMove){
-            score *= -1;
-        }
         return score;
 
     } 
-    public int negamin(Board board,Move move, int Depth){
+    public int minmax(Board board, bool PlayertoMaximize, int Depth){
         int returnValue = 0;
         if(Depth == 0){
-            board.MakeMove(move);
             returnValue = evalBoard(board);
-            board.UndoMove(move);
         }
         else{
-            board.MakeMove(move);
-            Move[] allMoves = board.GetLegalMoves();
-            foreach (Move newMove in allMoves){
-                int newValue = negamin(board, newMove, Depth - 1);
-                if(newValue > returnValue){
-                    returnValue = newValue; 
+            if(PlayertoMaximize){
+                returnValue = Int32.MinValue;
+                foreach (Move newMove in board.GetLegalMoves()){
+                    board.MakeMove(newMove);
+                    int newValue = minmax(board,false,Depth-1);
+                    if(newValue > returnValue){
+                        returnValue = newValue; 
+                    }
+                    board.UndoMove(newMove);
+                }
+                
+            }
+            else{
+                returnValue = Int32.MaxValue;
+                foreach (Move newMove in board.GetLegalMoves()){
+                    board.MakeMove(newMove);
+                    int newValue = minmax(board,true,Depth-1);
+                    if(newValue < returnValue){
+                        returnValue = newValue; 
+                    }
+                    board.UndoMove(newMove);
                 }
             }
-            board.UndoMove(move);
         }
-        return returnValue;
+    return returnValue;
     }
+
 }
